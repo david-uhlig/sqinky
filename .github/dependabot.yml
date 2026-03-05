@@ -1,0 +1,11 @@
+# Configure dependabot alerts and version updates
+# For supported ecosystems, see https://docs.github.com/en/code-security/dependabot/ecosystems-supported-by-dependabot/supported-ecosystems-and-repositories
+version: 2
+updates:
+  # Enable version updates for GitHub Actions
+  # Monitor `.github/workflows/*.yml` in the `root` directory
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 10

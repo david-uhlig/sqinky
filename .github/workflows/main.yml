@@ -1,0 +1,42 @@
+name: Tests
+
+on:
+  push:
+    branches-ignore:
+      - 'dependabot/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+  packages: read
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: Ruby ${{ matrix.ruby }} / Rails ${{ matrix.rails }}
+    strategy:
+      matrix:
+        ruby: ['3.2', '3.3', '3.4', '4.0']
+        rails: ['72', '80', '81', 'main']
+        exclude:
+          # Active Support requires Ruby >= 3.3.0
+          - rails: main
+            ruby: '3.2'
+    env:
+      BUNDLE_GEMFILE: ${{ github.workspace }}/gemfiles/rails_${{ matrix.rails }}.gemfile
+      BUNDLE_PATH_RELATIVE_TO_CWD: true
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ${{ matrix.ruby }}
+          bundler-cache: true
+      - name: Run StandardRb linting
+        run: bundle exec standardrb
+      - name: Run specs
+        run: bundle exec rspec spec

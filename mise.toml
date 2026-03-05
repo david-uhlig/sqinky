@@ -1,0 +1,54 @@
+[tools]
+ruby = "3.3"
+
+[tasks."benchmark:encoding"]
+description = "Run `bundle exec ruby benchmarks/id_encoding.rb`"
+run = "bundle exec ruby benchmarks/id_encoding.rb"
+
+[tasks."benchmark:retrieval"]
+description = "Run `bundle exec ruby benchmarks/db_retrieval.rb`"
+run = "bundle exec ruby benchmarks/db_retrieval.rb"
+
+[tasks."rake:standard"]
+description = "Run `rake standard`"
+run = "rake standard"
+
+[tasks."rake:spec"]
+description = "Run `rake spec`"
+run = "rake spec"
+
+[tasks."rake:tasks"]
+description = "Display all tasks with description"
+run = "rake --tasks"
+
+[tasks."rake:build"]
+description = "Build sqinky-x.y.z.gem into the pkg directory"
+run = "rake build"
+
+[tasks."appraisal:install"]
+depends = ["rake:standard", "rake:spec"]
+description = "Run `bundle exec appraisal install`"
+run = "bundle exec appraisal install"
+
+[tasks."appraisal:spec"]
+depends = ["appraisal:install"]
+description = "Run `bundle exec appraisal rake spec`"
+run = "bundle exec appraisal rake spec"
+
+[tasks.ci]
+depends = ["appraisal:spec"]
+description = "Run local CI"
+run = "echo 'CI finished successfully!'"
+
+[tasks.release]
+description = "Release a new version"
+run = "ruby bin/release"
+
+[tasks."github:workflow:list"]
+description = "List GitHub workflow runs"
+run = "gh run list --workflow='main.yml'"
+
+[tasks."github:workflow:run"]
+depends_post = ["github:workflow:list"]
+description = "Run the main workflow"
+run = "gh workflow run .github/workflows/main.yml"

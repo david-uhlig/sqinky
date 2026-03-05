@@ -1,0 +1,102 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "fileutils"
+
+def abort_with(message)
+  puts "Error: #{message}"
+  exit 1
+end
+
+def confirm(message, default_y: true)
+  print "#{message} [#{default_y ? 'Y/n' : 'y/N'}] "
+  input = gets.chomp.downcase
+  if input.empty?
+    return default_y
+  end
+
+  input == "y"
+end
+
+# 1. Check if everything is committed
+unless `git status --porcelain`.strip.empty?
+  abort_with "There are uncommitted changes. Please commit or stash them before releasing."
+end
+
+# 2. Read in Sqinky::VERSION
+version_file = File.join(__dir__, "..", "lib", "sqinky", "version.rb")
+unless File.exist?(version_file)
+  abort_with "Could not find #{version_file}"
+end
+
+version_content = File.read(version_file)
+version_match = version_content.match(/VERSION = ["'](.+)["']/)
+unless version_match
+  abort_with "Could not find VERSION in #{version_file}"
+end
+
+version = version_match[1]
+mtime = File.mtime(version_file).strftime("%Y-%m-%d %H:%M:%S")
+files_in_latest_commit = `git diff-tree --no-commit-id --name-only -r --root HEAD`.split("\n")
+in_latest_commit = files_in_latest_commit.include?("lib/sqinky/version.rb")
+changelog_in_latest_commit = files_in_latest_commit.include?("CHANGELOG.md")
+latest_tag = `git tag --sort=-creatordate | head -n 1`.strip
+latest_tag = "none" if latest_tag.empty?
+
+puts "Current version: #{version} (Modified: #{mtime}, Latest tag: #{latest_tag})"
+unless in_latest_commit
+  puts "Warning: lib/sqinky/version.rb is not in the latest commit."
+end
+unless changelog_in_latest_commit
+  puts "Warning: CHANGELOG.md is not in the latest commit."
+end
+
+# 2.1 Check latest commit message
+latest_commit_msg = `git log -1 --pretty=%B`.strip
+unless latest_commit_msg == "Version bump"
+  puts "Warning: Latest commit message is not \"Version bump\". Current: \"#{latest_commit_msg}\""
+end
+
+# 3. Ask for confirmation if the version number was bumped
+unless confirm("Was the version number bumped?", default_y: true)
+  abort_with "Version was not bumped. Please update VERSION in #{version_file}."
+end
+
+# 4. Check Changelog for a version section
+changelog_file = File.join(__dir__, "..", "CHANGELOG.md")
+unless File.exist?(changelog_file)
+  abort_with "Could not find CHANGELOG.md"
+end
+
+changelog_content = File.read(changelog_file)
+unless changelog_content.match?(/^### #{Regexp.escape(version)}/)
+  puts "Warning: CHANGELOG.md does not have a section with the version number `### #{version}`."
+end
+
+# 5. Check if the `### Unreleased` section is empty
+unreleased_match = changelog_content.match(/^### Unreleased\s*(.*?)\s*^###/m) || 
+                   changelog_content.match(/^### Unreleased\s*(.*)/m)
+
+if unreleased_match
+  unreleased_content = unreleased_match[1].strip
+  unless unreleased_content.empty?
+    puts "Warning: The `### Unreleased` section is not empty."
+  end
+end
+
+# 6. Ask for confirmation that the Changelog is correct
+unless confirm("Is the Changelog correct?", default_y: true)
+  abort_with "Changelog is not correct. Please update CHANGELOG.md."
+end
+
+# 7. Create tag `v<Version>`
+tag_name = "v#{version}"
+puts "Creating tag #{tag_name}..."
+system("git tag -a #{tag_name} -m \"Release #{tag_name}\" --sign") || abort_with("Failed to create tag #{tag_name}")
+
+# 8. Push outstanding commits and the tag to github
+puts "Pushing commits and tags to origin..."
+system("git push origin main") || abort_with("Failed to push commits")
+system("git push origin #{tag_name}") || abort_with("Failed to push tag")
+
+puts "Release #{version} successful!"
