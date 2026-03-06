@@ -177,24 +177,26 @@ label.id_encoding # => "Uk"
 
 #### `encodes_identifiers`
 
-| Parameter         | Default | Description                                                                                 |
-|-------------------|---------|---------------------------------------------------------------------------------------------|
-| `*attributes`     |         | The attribute(s) to encode. Should only have `Integer` `>= 0` values.                       |
-| `as:`             | `nil`   | If `nil` inferred as `<attribute[_and_<attribute>]>_encoding`.                              |
-| `decodes_as:`     | `nil`   | Name of the decoding class method. If `nil` no such method is generated.                    |
-| `**sqids_options` | `{}`    | Sqids options passed through to `Sqids.new`, e.g. `min_length`, `alphabet`, and `blocklist` |
+| Parameter         | Default | Description                                                                                  |
+|-------------------|---------|----------------------------------------------------------------------------------------------|
+| `*attributes`     |         | The attribute(s) to encode. Should only have `Integer` `>= 0` values.                        |
+| `as:`             | `nil`   | If `nil` inferred as `<attribute[_and_<attribute>]>_encoding`.                               |
+| `decodes_as:`     | `nil`   | Name of the decoding class method. If `nil` no such method is generated.                     |
+| `**sqids_options` | `{}`    | Sqids options passed through to `Sqids.new`, e.g. `min_length`, `alphabet`, and `blocklist`. |
 
 ### Generated Methods Overview
+
+Sqinky generates these methods when invoking `encodes_identifier(s)`:
 
 | Method                            | Description                                                                                        |
 |-----------------------------------|----------------------------------------------------------------------------------------------------|
 | `instance.<as>`                   | Returns the Sqids encoding for the configured attributes. Returns `nil` if any attribute is `nil`. |
 | `instance.<as>!`                  | Same as above, but raises `ArgumentError` if any attribute is not an `Integer`.                    |
 | `Class.<decodes_as>(encoding)`    | Returns the decoded hash, e.g. `{ id: 42 }`.                                                       |
-| `Class.find_by_<as>(encoding)`    | Decodes `encoding` and passes the decoded hash to `find_by(...)`                                   |
-| `Class.find_by_<as>(encoding)!`   | Decodes `encoding` and passes the decoded hash to `find_by(...)!`                                  |
-| `Class.destroy_by_<as>(encoding)` | Decodes `encoding` and passes the decoded hash to `destroy_by(...)`                                |
-| `Class.delete_by_<as>(encoding)`  | Decodes `encoding` and passes the decoded hash to `delete_by(...)`                                 |
+| `Class.find_by_<as>(encoding)`    | Decodes `encoding` and passes the decoded hash to `find_by(...)`.                                  |
+| `Class.find_by_<as>!(encoding)`   | Decodes `encoding` and passes the decoded hash to `find_by!(...)`.                                 |
+| `Class.destroy_by_<as>(encoding)` | Decodes `encoding` and passes the decoded hash to `destroy_by(...)`.                               |
+| `Class.delete_by_<as>(encoding)`  | Decodes `encoding` and passes the decoded hash to `delete_by(...)`.                                |
 
 ## Development
 
