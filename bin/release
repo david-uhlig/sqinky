@@ -8,6 +8,11 @@ def abort_with(message)
   exit 1
 end
 
+# 0. Prevent running in non-interactive environments (e.g., CI)
+if ENV["GITHUB_ACTIONS"] == "true" || !STDIN.tty?
+  abort_with "This script is not intended to be run in a non-interactive environment like GitHub Actions."
+end
+
 def confirm(message, default_y: true)
   print "#{message} [#{default_y ? 'Y/n' : 'y/N'}] "
   input = gets.chomp.downcase
