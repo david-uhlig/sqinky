@@ -1,10 +1,15 @@
 [Sqids]: https://sqids.org/
+[gem]: https://rubygems.org/gems/sqinky
+[license]: https://github.com/david-uhlig/sqinky/blob/main/LICENSE.md
+[tests]: https://github.com/david-uhlig/sqinky/actions/workflows/main.yml
 
 # 🫟 Sqinky
 
 ## 🦑 [Sqids] for your Active Record models.
 
-[![License](https://img.shields.io/github/license/david-uhlig/sqinky?label=License&labelColor=343B42&color=blue)](https://github.com/david-uhlig/sqinky/blob/main/LICENSE.md) [![Gem Version](https://badge.fury.io/rb/sqinky.svg)](https://badge.fury.io/rb/sqinky) [![Tests](https://github.com/david-uhlig/sqinky/actions/workflows/main.yml/badge.svg)](https://github.com/david-uhlig/sqinky/actions/workflows/main.yml)
+[![Gem Version](http://img.shields.io/gem/v/sqinky.svg)][gem]
+[![License: MIT](https://img.shields.io/github/license/david-uhlig/sqinky?label=License&labelColor=343B42&color=blue)][license]
+[![Tests](https://github.com/david-uhlig/sqinky/actions/workflows/main.yml/badge.svg)][tests]
 
 > **What is Sqids?**
 > 
@@ -218,6 +223,10 @@ This project uses [mise](https://mise.jdx.dev/) for managing Ruby versions and t
 - `bundle exec appraisal install`: 
 - `bundle exec appraisal rake spec`: Run tests against all supported Rails versions.
 - `mise run ci`: Run the local CI pipeline (linting and multi-Rails tests).
+
+## Versioning
+
+This library aims to adhere to [Semantic Versioning 2.0.0](http://semver.org/). Violations of this scheme should be reported as bugs.
 
 ## Contributing
 
