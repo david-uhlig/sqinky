@@ -18,12 +18,8 @@ jobs:
     name: Ruby ${{ matrix.ruby }} / Rails ${{ matrix.rails }}
     strategy:
       matrix:
-        ruby: ['3.2', '3.3', '3.4', '4.0']
+        ruby: ['3.3', '3.4', '4.0']
         rails: ['72', '80', '81', 'main']
-        exclude:
-          # Active Support requires Ruby >= 3.3.0
-          - rails: main
-            ruby: '3.2'
     env:
       BUNDLE_GEMFILE: ${{ github.workspace }}/gemfiles/rails_${{ matrix.rails }}.gemfile
       BUNDLE_PATH_RELATIVE_TO_CWD: true
