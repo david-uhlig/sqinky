@@ -10,7 +10,7 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
         with:
           persist-credentials: false
       - name: Set up Ruby
@@ -18,4 +18,4 @@ jobs:
         with:
           bundler-cache: false
       - name: Release to RubyGems
-        uses: rubygems/release-gem@f0d7faff26625599a847d40d9fa28ace24c2aacc
+        uses: rubygems/release-gem@052cc82692552de3ef2b81fd670e41d13cba8092
