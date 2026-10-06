@@ -113,7 +113,7 @@ class Order < ApplicationRecord
   encodes_identifier :id, as: :public_id, decodes_as: :decode_public_id
 end
 
-Order.decode_public_id("86Rf07") # => { id: 1 }
+Order.decode_public_id("Uk") # => { id: 1 }
 ```
 
 ### Custom Sqids Options
@@ -127,6 +127,9 @@ class Comment < ApplicationRecord
   encodes_identifier :id, alphabet: "abcdef0123456789", min_length: 10
 end
 ```
+
+> [!IMPORTANT]
+> Sqids encodings are not encrypted. With the default alphabet, `"Uk"` means `1` in every app that uses Sqids, and anyone can decode an encoding with the public Sqids library. Use encodings to shorten URLs and hide sequential IDs from casual view, not for access control: always authorize access to the record you find. To make encodings app-specific, pass a shuffled `alphabet:` before you issue any encodings, since changing it later breaks existing ones (see [Changing Sqids options](#changing-sqids-options)).
 
 ### Multiple Encodings
 
@@ -144,7 +147,7 @@ post = Post.create!(title: "How Sqinky became so inkie.")
 post.id # => 212
 post.tenant_id # => 42
 post.id_encoding # => "37E"
-post.id_and_tenant_id_encoding # "jGTwn"
+post.id_and_tenant_id_encoding # => "jGTwn"
 
 Post.find_by_id_encoding("37E") # => #<Post id: 212, ...>
 Post.find_by_id_and_tenant_id_encoding("jGTwn") # => #<Post id: 212, ...>
@@ -271,7 +274,7 @@ This project uses [mise](https://mise.jdx.dev/) for managing Ruby versions and t
 - `bin/console`: Open an interactive prompt to experiment with the code.
 - `rake spec`: Run the test suite.
 - `rake standard`: Run the StandardRB linter.
-- `bundle exec appraisal install`: 
+- `bundle exec appraisal install`: Install the dependencies for all supported Rails versions.
 - `bundle exec appraisal rake spec`: Run tests against all supported Rails versions.
 - `mise run ci`: Run the local CI pipeline (linting and multi-Rails tests).
 

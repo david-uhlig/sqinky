@@ -32,7 +32,7 @@ module Sqinky
       # #### Generates
       # * +#<as>+ - Generates the Sqids encoding from the attribute value. Returns nil if the value is blank, raises +ArgumentError+ if it is noninteger.
       # * +#<as>!+ - Generates the Sqids encoding from the attribute value. Raises +ArgumentError+ if the attribute value is noninteger, including nil.
-      # * +#<decodes_as>(encoding)+ - Decodes a Sqids encoding back to the attribute-value hash. (Optional)
+      # * +.<decodes_as>(encoding)+ - Decodes a Sqids encoding back to the attribute-value hash. (Optional)
       # * +.find_by_<as>(encoding)+ - Finds record by +encoding+ or returns nil.
       # * +.find_by_<as>!(encoding)+ - Finds record by +encoding+ or raises +ActiveRecord::RecordNotFound+ error.
       # * +.destroy_by_<as>(encoding)+ - Destroys record by +encoding+.
@@ -44,7 +44,7 @@ module Sqinky
       # @param canonical [Boolean] If +true+ (default), only the canonical encoding of the decoded values is accepted. Set to +false+ to also accept non-canonical encodings, e.g. those issued before +min_length+ was raised or +blocklist+ was changed. Encodings with the wrong number of values are rejected either way.
       # @param sqids_options [Hash] Options forwarded to +Sqids.new+, e.g. +alphabet+, +min_length+, and +blocklist+.
       #
-      # @return [Void]
+      # @return [void]
       #
       # @see .encodes_identifiers
       def encodes_identifier(attribute = :id, as: nil, decodes_as: nil, canonical: true, **sqids_options)
@@ -60,7 +60,7 @@ module Sqinky
       # #### Generates
       # * +#<as>+ - Generates the Sqids encoding from the attribute values. Returns nil if any value is blank, raises +ArgumentError+ if any value is noninteger.
       # * +#<as>!+ - Generates the Sqids encoding from the attribute values. Raises +ArgumentError+ if any attribute value is noninteger, including nil.
-      # * +#<decodes_as>(encoding)+ - Decodes a Sqids encoding back to the attributes-values hash. (Optional)
+      # * +.<decodes_as>(encoding)+ - Decodes a Sqids encoding back to the attributes-values hash. (Optional)
       # * +.find_by_<as>(encoding)+ - Finds record by +encoding+ or returns nil.
       # * +.find_by_<as>!(encoding)+ - Finds record by +encoding+ or raises +ActiveRecord::RecordNotFound+ error.
       # * +.destroy_by_<as>(encoding)+ - Destroys record by +encoding+.
@@ -131,7 +131,7 @@ module Sqinky
       #   end
       #
       #   order = Order.create!(shop_id: 10)
-      #   encoded = order.public_id           # => e.g. "86Rf07"
+      #   encoded = order.public_id           # => "U6Lg"
       #   Order.decode_public_id(encoded)
       #   # => { shop_id: 10, id: 1 }
       #
@@ -153,9 +153,9 @@ module Sqinky
       #     include Sqinky::IdentifierEncoding
       #
       #     # Encodes +id+ into +id_encoding+.
-      #     encode_identifier
+      #     encodes_identifier
       #     # Encodes +id+ (again) into +code+ with the +abc+ alphabet.
-      #     encode_identifier as: :code, alphabet: "abc"
+      #     encodes_identifier as: :code, alphabet: "abc"
       #     # Encodes both +user_id+ and +group_id+ into a single token. Make sure to
       #     # use a different +as+ (and +decodes_as+) value for each encoder, otherwise they will overwrite
       #     # each other.
@@ -176,9 +176,7 @@ module Sqinky
       #   membership_token = membership.membership_token
       #   # => "7edZ"
       #   Membership.find_by_membership_token(membership_token)
-      #   # => Internally calls `find_by(user_id: 44, group_id: 12)
-      #
-      # @return [Void]
+      #   # => Internally calls `find_by(user_id: 44, group_id: 12)`
       #
       # @param attributes [Array<Symbol>] List of attributes to encode. At least one attribute must be provided.
       # @param as [Symbol, nil] Name of the instance method that returns the encoding. Also part of the database methods, e.g. +find_by_<as>+. If missing, it is generated from the attribute names, e.g. +id_encoding+ or +id_and_tenant_id_encoding+.
