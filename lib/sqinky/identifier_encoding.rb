@@ -193,7 +193,7 @@ module Sqinky
       def encodes_identifiers(*attributes, as: nil, decodes_as: nil, canonical: true, **sqids_options)
         if attributes.compact_blank!.empty?
           raise ArgumentError, <<~MSG
-            Must specify at least one attribute. Hint: Use `encodes_identifier` instead to encode the primary key 
+            Must specify at least one attribute. Hint: Use `encodes_identifier` instead to encode the primary key
             without having to specify the `:id` attribute.
           MSG
         end
@@ -256,7 +256,7 @@ module Sqinky
         #   @raise [ArgumentError] If any of the attributes is present but not an integer between 0 and +Sqids.max_value+.
         #   @return [String, nil] Encoded identifier or nil if any of the attributes is +blank?+.
         define_method(encoding_method_name) do
-          values = attributes.map { send(_1) }
+          values = attributes.map { public_send(_1) }
 
           if values.any?(&:blank?)
             nil
@@ -271,7 +271,7 @@ module Sqinky
         #   @raise [ArgumentError] If any of the attributes is not an integer between 0 and +Sqids.max_value+, including nil.
         #   @return [String] Encoded identifier.
         define_method("#{encoding_method_name}!") do
-          encode.call(attributes.map { send(_1) })
+          encode.call(attributes.map { public_send(_1) })
         end
 
         database_methods.each do |base_method, dynamic_method|
