@@ -215,8 +215,8 @@ Sqinky generates these methods when invoking `encodes_identifier(s)`:
 
 | Method                            | Description                                                                                        |
 |-----------------------------------|----------------------------------------------------------------------------------------------------|
-| `instance.<as>`                   | Returns the Sqids encoding for the configured attributes. Returns `nil` if any attribute is `nil`. |
-| `instance.<as>!`                  | Same as above, but raises `ArgumentError` if any attribute is not an `Integer`.                    |
+| `instance.<as>`                   | Returns the Sqids encoding for the configured attributes. Returns `nil` if any attribute is blank, raises `ArgumentError` if any attribute is not an `Integer`. |
+| `instance.<as>!`                  | Same as above, but also raises `ArgumentError` instead of returning `nil` for blank attributes.    |
 | `Class.<decodes_as>(encoding)`    | Returns the decoded hash, e.g. `{ id: 42 }`, or `nil` if the encoding is invalid.                  |
 | `Class.find_by_<as>(encoding)`    | Decodes `encoding` and passes the decoded hash to `find_by(...)`.                                  |
 | `Class.find_by_<as>!(encoding)`   | Decodes `encoding` and passes the decoded hash to `find_by!(...)`.                                 |

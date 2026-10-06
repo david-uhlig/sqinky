@@ -28,8 +28,8 @@ module Sqinky
       # * The referenced +attribute+ must be present when the generated +#{as}+ method is called.
       #
       # #### Generates
-      # * +#<as>+ - Generates the Sqids encoding from the attribute value.
-      # * +#<as>!+ - Generates the Sqids encoding from the attribute value. Raises +ArgumentError+ the attribute value is noninteger.
+      # * +#<as>+ - Generates the Sqids encoding from the attribute value. Returns nil if the value is blank, raises +ArgumentError+ if it is noninteger.
+      # * +#<as>!+ - Generates the Sqids encoding from the attribute value. Raises +ArgumentError+ if the attribute value is noninteger, including nil.
       # * +#<decodes_as>(encoding)+ - Decodes a Sqids encoding back to the attribute-value hash. (Optional)
       # * +.find_by_<as>(encoding)+ - Finds record by +encoding+ or returns nil.
       # * +.find_by_<as>!(encoding)+ - Finds record by +encoding+ or raises +ActiveRecord::RecordNotFound+ error.
@@ -56,8 +56,8 @@ module Sqinky
       # * The referenced +attribute+ must be present when the generated +#{as}+ method is called.
       #
       # #### Generates
-      # * +#<as>+ - Generates the Sqids encoding from the attribute values.
-      # * +#<as>!+ - Generates the Sqids encoding from the attribute values. Raises +ArgumentError+ if any attribute value is noninteger.
+      # * +#<as>+ - Generates the Sqids encoding from the attribute values. Returns nil if any value is blank, raises +ArgumentError+ if any value is noninteger.
+      # * +#<as>!+ - Generates the Sqids encoding from the attribute values. Raises +ArgumentError+ if any attribute value is noninteger, including nil.
       # * +#<decodes_as>(encoding)+ - Decodes a Sqids encoding back to the attributes-values hash. (Optional)
       # * +.find_by_<as>(encoding)+ - Finds record by +encoding+ or returns nil.
       # * +.find_by_<as>!(encoding)+ - Finds record by +encoding+ or raises +ActiveRecord::RecordNotFound+ error.
@@ -218,28 +218,9 @@ module Sqinky
           end
         end
 
-        # @!method <encoding_method_name>
-        #   Returns the Sqids-encoded identifier for the configured attributes.
-        #
-        #   Will return an irreversible encoding if any attribute is noninteger. Use the bang method to ensure a
-        #   reversible encoding.
-        #
-        #   @raises [ArgumentError] If any of the attributes is a number below 0 or above +Sqids.max_value+.
-        #   @return [String, nil] Encoded identifier or nil if any of the attributes is +blank?+.
-        define_method(encoding_method_name) do
-          values = attributes.map { send(_1) }
-          values.any?(&:blank?) ? nil : coder.encode(values)
-        end
-
-        # @!method <encoding_method_name>
-        #   Returns the Sqids-encoded identifier for the configured attributes.
-        #
-        #   Ensures a reversible encoding.
-        #
-        #   @raises [ArgumentError] If any of the attributes is not a positive integer between 0 and +Sqids.max_value+
-        #   @return [String] Encoded identifier.
-        define_method("#{encoding_method_name}!") do
-          values = attributes.map { send(_1) }
+        # Returns the Sqids encoding of the given values. Raises +ArgumentError+ unless every value is an +Integer+, so
+        # that, e.g., 1.5 cannot be encoded as the same identifier as 1.
+        encode = lambda do |values|
           unless values.all? { _1.is_a?(Integer) }
             raise ArgumentError, <<~MSG
               Encoding supports integers between 0 and #{Sqids.max_value}.
@@ -248,6 +229,30 @@ module Sqinky
             MSG
           end
           coder.encode(values)
+        end
+
+        # @!method <encoding_method_name>
+        #   Returns the Sqids-encoded identifier for the configured attributes.
+        #
+        #   @raise [ArgumentError] If any of the attributes is present but not an integer between 0 and +Sqids.max_value+.
+        #   @return [String, nil] Encoded identifier or nil if any of the attributes is +blank?+.
+        define_method(encoding_method_name) do
+          values = attributes.map { send(_1) }
+
+          if values.any?(&:blank?)
+            nil
+          else
+            encode.call(values)
+          end
+        end
+
+        # @!method <encoding_method_name>!
+        #   Returns the Sqids-encoded identifier for the configured attributes.
+        #
+        #   @raise [ArgumentError] If any of the attributes is not an integer between 0 and +Sqids.max_value+, including nil.
+        #   @return [String] Encoded identifier.
+        define_method("#{encoding_method_name}!") do
+          encode.call(attributes.map { send(_1) })
         end
 
         database_methods.each do |base_method, dynamic_method|
