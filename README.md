@@ -292,6 +292,8 @@ This library aims to adhere to [Semantic Versioning 2.0.0](http://semver.org/). 
 
 Bug reports and pull requests are welcome on GitHub at https://github.com/david-uhlig/sqinky. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [code of conduct](https://github.com/david-uhlig/sqinky/blob/main/CODE_OF_CONDUCT.md).
 
+Please report security vulnerabilities privately as described in the [security policy](SECURITY.md).
+
 ## License
 
 The gem is available as open source under the terms of the [MIT License](LICENSE.md).
