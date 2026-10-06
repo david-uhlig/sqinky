@@ -23,7 +23,7 @@ jobs:
     strategy:
       matrix:
         ruby: ['3.3', '3.4', '4.0']
-        rails: ['72', '80', '81', 'main']
+        rails: ['80', '81', 'main']
     env:
       BUNDLE_GEMFILE: ${{ github.workspace }}/gemfiles/rails_${{ matrix.rails }}.gemfile
       BUNDLE_PATH_RELATIVE_TO_CWD: true
