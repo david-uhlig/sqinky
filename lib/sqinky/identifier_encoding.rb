@@ -21,6 +21,9 @@ module Sqinky
   module IdentifierEncoding
     extend ActiveSupport::Concern
 
+    # The largest +min_length+ that +Sqids.new+ accepts.
+    SQIDS_MAX_MIN_LENGTH = 255
+
     class_methods do
       # Generates methods for creating and consuming a single identifier attribute encoding, typically for the primary
       # key +id+.
@@ -207,14 +210,21 @@ module Sqinky
           class_methods: database_methods.values + [decodes_as.presence].compact
         )
 
-        # Returns the attribute-value hash for a valid encoding, or nil. An encoding is valid if it is a non-empty
-        # String that decodes to exactly one value per attribute, no value exceeds +Sqids.max_value+ and, unless
-        # +canonical+ is false, is the canonical encoding of those values. This rejects foreign characters, encodings
-        # of a different arity, oversized values, and non-canonical aliases of the same values.
-        decode = lambda do |encoding|
-          values = encoding.is_a?(String) ? coder.decode(encoding) : []
+        # Decoding time grows quadratically with the encoding length, so longer encodings are rejected before decoding.
+        # The longest canonical encoding encodes the maximum value for every attribute, padded to +min_length+.
+        # Non-canonical encodings may have been issued with a larger +min_length+, up to the Sqids limit.
+        max_encoding_length = coder.encode([Sqids.max_value] * attributes.size).length
+        max_encoding_length = [max_encoding_length, SQIDS_MAX_MIN_LENGTH].max unless canonical
 
-          # Covers nil, non-String, empty, and foreign-character input, which all decode to no values.
+        # Returns the attribute-value hash for a valid encoding, or nil. An encoding is valid if it is a non-empty
+        # String no longer than +max_encoding_length+ that decodes to exactly one value per attribute, no value exceeds
+        # +Sqids.max_value+ and, unless +canonical+ is false, is the canonical encoding of those values. This rejects
+        # foreign characters, encodings of a different arity, oversized values, and non-canonical aliases of the same
+        # values.
+        decode = lambda do |encoding|
+          values = (encoding.is_a?(String) && encoding.length <= max_encoding_length) ? coder.decode(encoding) : []
+
+          # Covers nil, non-String, empty, too long, and foreign-character input, which all decode to no values.
           if values.size != attributes.size
             nil
           # Sqids decodes long input into values it can't encode, so re-encoding them would raise.

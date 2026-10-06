@@ -110,7 +110,7 @@ RSpec.describe Sqinky::IdentifierEncoding do
 
     describe "sqids parameters" do
       it "passes sqids arguments to Sqids.new" do
-        expect(Sqids).to receive(:new).with(min_length: 10, alphabet: "abc", blocklist: [])
+        expect(Sqids).to receive(:new).with(min_length: 10, alphabet: "abc", blocklist: []).and_call_original
         subject.encodes_identifiers(:id, min_length: 10, alphabet: "abc", blocklist: [])
       end
     end
@@ -350,6 +350,47 @@ RSpec.describe Sqinky::IdentifierEncoding do
       instance.other_id = 87686
       instance.last_id = 3246
       expect(subject.token_decoding(instance.token)).to eq({id: 2165, other_id: 87686, last_id: 3246})
+    end
+
+    context "encoding length" do
+      let(:max) { Sqids.max_value }
+
+      it "decodes the longest valid encoding" do
+        subject.attr_accessor(:id, :other_id)
+        subject.encodes_identifiers(:id, :other_id, as: :token, decodes_as: :token_decoding)
+        instance.id = max
+        instance.other_id = max
+        expect(subject.token_decoding(instance.token)).to eq({id: max, other_id: max})
+      end
+
+      it "decodes the longest valid encoding padded to min_length" do
+        subject.attr_accessor(:id)
+        subject.encodes_identifiers(:id, decodes_as: :token_decoding, min_length: 255)
+        instance.id = max
+        expect(instance.id_encoding.length).to eq(255)
+        expect(subject.token_decoding(instance.id_encoding)).to eq({id: max})
+      end
+
+      it "rejects a longer encoding without decoding it" do
+        subject.encodes_identifiers(:id, decodes_as: :token_decoding)
+        expect_any_instance_of(Sqids).not_to receive(:decode)
+        expect(subject.token_decoding("U" * 100_000)).to be_nil
+      end
+
+      it "rejects an encoding within the length limit that decodes to a value above Sqids.max_value" do
+        subject.encodes_identifiers(:id, decodes_as: :token_decoding)
+        oversized = "UZZZZZZZZZZZ"
+        expect(oversized.length).to eq(Sqids.new.encode([max]).length)
+        expect(subject.token_decoding(oversized)).to be_nil
+      end
+
+      it "accepts encodings issued with the largest min_length if not canonical" do
+        subject.attr_accessor(:id)
+        subject.encodes_identifiers(:id, decodes_as: :token_decoding, canonical: false)
+        issued = Sqids.new(min_length: 255).encode([1])
+        expect(subject.token_decoding(issued)).to eq({id: 1})
+        expect(subject.token_decoding("#{issued}U")).to be_nil
+      end
     end
   end
 
