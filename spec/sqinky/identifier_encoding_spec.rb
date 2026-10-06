@@ -29,13 +29,13 @@ RSpec.describe Sqinky::IdentifierEncoding do
 
   describe "#encodes_identifier" do
     it "delegates default values to #encodes_identifiers" do
-      expect(subject).to receive(:encodes_identifiers).with(:id, as: nil, decodes_as: nil)
+      expect(subject).to receive(:encodes_identifiers).with(:id, as: nil, decodes_as: nil, canonical: true)
       subject.encodes_identifier
     end
 
     it "delegates to #encodes_identifiers" do
-      expect(subject).to receive(:encodes_identifiers).with(:other_id, as: :token, decodes_as: :token_decoding, min_length: 10, alphabet: "abc", blocklist: [])
-      subject.encodes_identifier(:other_id, as: :token, decodes_as: :token_decoding, min_length: 10, alphabet: "abc", blocklist: [])
+      expect(subject).to receive(:encodes_identifiers).with(:other_id, as: :token, decodes_as: :token_decoding, canonical: false, min_length: 10, alphabet: "abc", blocklist: [])
+      subject.encodes_identifier(:other_id, as: :token, decodes_as: :token_decoding, canonical: false, min_length: 10, alphabet: "abc", blocklist: [])
     end
   end
 
