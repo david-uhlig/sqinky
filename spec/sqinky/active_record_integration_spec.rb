@@ -181,6 +181,14 @@ RSpec.describe "Sqinky::IdentifierEncoding with Active Record" do
     end
   end
 
+  context "with a name that collides with an Active Record method" do
+    it "raises instead of replacing the method" do
+      expect { model.encodes_identifier(as: :id) }.to raise_error(ArgumentError, /SqinkyMembership already defines #id\./)
+      expect { model.encodes_identifier(as: :to_param) }.to raise_error(ArgumentError, /#to_param\./)
+      expect(member.id).to eq(1)
+    end
+  end
+
   context "with a single-attribute encoding passed to an extra-values finder" do
     it "does not ignore the surplus values" do
       expect(model.find_by_id_encoding(sqids.encode([member.id, 999]))).to be_nil

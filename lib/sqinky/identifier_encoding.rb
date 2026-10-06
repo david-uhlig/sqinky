@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 require "active_support/concern"
+require "active_support/core_ext/enumerable"
+require "active_support/core_ext/object/blank"
 require "sqids"
 
 module Sqinky
@@ -182,7 +184,7 @@ module Sqinky
       # @param canonical [Boolean] If +true+ (default), only the canonical encoding of the decoded values is accepted. Set to +false+ to also accept non-canonical encodings, e.g. those issued before +min_length+ was raised or +blocklist+ was changed. Encodings with the wrong number of values are rejected either way.
       # @param sqids_options [Hash] Options forwarded to +Sqids.new+, e.g. +alphabet+, +min_length+, and +blocklist+.
       #
-      # @raise [ArgumentError] if no attributes are given.
+      # @raise [ArgumentError] if no attributes are given, or if a generated method would replace an existing method.
       #
       # @return [void]
       def encodes_identifiers(*attributes, as: nil, decodes_as: nil, canonical: true, **sqids_options)
@@ -194,10 +196,16 @@ module Sqinky
         end
         coder = Sqids.new(**sqids_options)
         encoding_method_name = as.presence || attributes.join("_and_").concat("_encoding")
-        database_methods = %w[find_by find_by! destroy_by delete_by].map do |base_method|
-          # ["find_by!", "find_by_id_encoding!"]
-          [base_method, base_method.gsub(/(\w+?)(!?)\b/, "\\1_#{encoding_method_name}\\2")]
-        end
+        database_methods = {
+          "find_by" => "find_by_#{encoding_method_name}",
+          "find_by!" => "find_by_#{encoding_method_name}!",
+          "destroy_by" => "destroy_by_#{encoding_method_name}",
+          "delete_by" => "delete_by_#{encoding_method_name}"
+        }
+        sqinky_ensure_method_names_available!(
+          instance_methods: [encoding_method_name, "#{encoding_method_name}!"],
+          class_methods: database_methods.values + [decodes_as.presence].compact
+        )
 
         # Returns the attribute-value hash for a valid encoding, or nil. An encoding is valid if it is a non-empty
         # String that decodes to exactly one value per attribute and, unless +canonical+ is false, is the canonical
@@ -296,6 +304,35 @@ module Sqinky
           define_singleton_method(decoding_method_name) do |encoding|
             decode.call(encoding)
           end
+        end
+      end
+
+      private
+
+      # Raises +ArgumentError+ if any of the generated methods would replace an existing method, e.g. +as: :id+.
+      # Replacing a method that Sqinky generated in a superclass is allowed, so child classes can redeclare an
+      # inherited encoding.
+      def sqinky_ensure_method_names_available!(instance_methods:, class_methods:)
+        conflicts = instance_methods.filter { sqinky_method_name_taken?(self, _1) }.map { "##{_1}" } +
+          class_methods.filter { sqinky_method_name_taken?(singleton_class, _1) }.map { ".#{_1}" }
+
+        unless conflicts.empty?
+          raise ArgumentError, <<~MSG
+            #{name || inspect} already defines #{conflicts.join(", ")}. Choose a different name with `as:` or `decodes_as:`.
+          MSG
+        end
+      end
+
+      # A name is taken if +mod+ already has a method by that name, unless Sqinky generated it in a superclass.
+      def sqinky_method_name_taken?(mod, method_name)
+        if mod.method_defined?(method_name) || mod.private_method_defined?(method_name)
+          method = mod.instance_method(method_name)
+          generated_by_sqinky = method.source_location&.first == __FILE__
+          inherited = method.owner != mod
+
+          !(generated_by_sqinky && inherited)
+        else
+          false
         end
       end
     end

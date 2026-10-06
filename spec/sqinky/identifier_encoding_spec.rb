@@ -465,5 +465,45 @@ RSpec.describe Sqinky::IdentifierEncoding do
       expect(instance.id).to be <= Sqids.max_value
       expect(instance.id_encoding).to eq(sqids.encode([instance.id]))
     end
+
+    it "may redeclare an inherited encoding" do
+      expect { subject.encodes_identifier(alphabet: "abcdef0123456789") }.not_to raise_error
+
+      instance.id = 1
+      expect(instance.id_encoding).to eq(Sqids.new(alphabet: "abcdef0123456789").encode([1]))
+    end
+  end
+
+  describe "method name collisions" do
+    before { subject.attr_accessor(:id) }
+
+    it "raises when the encoding method replaces an attribute" do
+      expect { subject.encodes_identifier(as: :id) }.to raise_error(ArgumentError, /defines #id\. Choose/)
+    end
+
+    it "raises when the encoding method replaces a hand-written method" do
+      subject.define_method(:token) { "hand-written" }
+
+      expect { subject.encodes_identifier(as: :token) }.to raise_error(ArgumentError, /#token/)
+      expect(instance.token).to eq("hand-written")
+    end
+
+    it "raises when a class method replaces an existing class method" do
+      expect { subject.encodes_identifier(decodes_as: :find_by) }.to raise_error(ArgumentError, /\.find_by\b/)
+    end
+
+    it "raises when two encodings in the same class share a name" do
+      subject.encodes_identifier(as: :token)
+
+      expect { subject.encodes_identifier(as: :token, min_length: 10) }
+        .to raise_error(ArgumentError, /#token, #token!, \.find_by_token, \.find_by_token!, \.destroy_by_token, \.delete_by_token/)
+    end
+
+    it "defines none of the methods when one of them collides" do
+      expect { subject.encodes_identifier(decodes_as: :find_by) }.to raise_error(ArgumentError)
+
+      expect(instance).not_to respond_to(:id_encoding)
+      expect(subject).not_to respond_to(:find_by_id_encoding)
+    end
   end
 end
