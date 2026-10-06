@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   viewBox="0 0 256 256"
+   width="256"
+   height="256"
+   version="1.1"
+   id="svg22"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs2">
+    <linearGradient
+       id="body"
+       x1="0"
+       y1="0"
+       x2="0"
+       y2="1">
+      <stop
+         offset="0"
+         stop-color="#F0584E"
+         id="stop1" />
+      <stop
+         offset="1"
+         stop-color="#C8302A"
+         id="stop2" />
+    </linearGradient>
+  </defs>
+  <!-- ink cloud with an ID inside -->
+  <g
+     fill="#1F2547"
+     id="g7">
+    <circle
+       cx="200"
+       cy="206"
+       r="34"
+       id="circle2" />
+    <circle
+       cx="228"
+       cy="178"
+       r="16"
+       id="circle3" />
+    <circle
+       cx="170"
+       cy="232"
+       r="16"
+       id="circle4" />
+    <circle
+       cx="232"
+       cy="222"
+       r="14"
+       id="circle5" />
+    <circle
+       cx="244"
+       cy="152"
+       r="7"
+       id="circle6" />
+    <circle
+       cx="150"
+       cy="246"
+       r="6"
+       id="circle7" />
+  </g>
+  <path
+     d="m 184.49121,208.92871 v -13.79883 h 4.32129 v 14.88282 q 0,1.64062 0.83496,2.57812 0.83496,0.92285 2.31445,0.92285 1.4795,0 2.31446,-0.92285 0.83496,-0.9375 0.83496,-2.57812 v -14.88282 h 4.32129 v 13.79883 q 0,4.45313 -1.77246,6.47461 -1.77246,2.02148 -5.69825,2.02148 -3.91113,0 -5.69824,-2.02148 -1.77246,-2.02148 -1.77246,-6.47461 z m 19.05762,-14.72168 h 4.29199 v 11.96777 l 5.15625,-5.58105 h 5.2002 l -6.21094,6.12305 6.5625,10.2832 h -4.7461 l -4.49707,-7.67578 -1.46484,1.40625 V 217 h -4.29199 z"
+     id="text7"
+     style="font-weight:bold;font-size:30px;font-family:'DejaVu Sans Mono';text-anchor:middle;fill:#ffffff"
+     aria-label="Uk" />
+  <!-- tentacles -->
+  <g
+     fill="none"
+     stroke="url(#body)"
+     stroke-width="13"
+     stroke-linecap="round"
+     id="g11">
+    <path
+       d="M78 150 C 56 172, 44 196, 60 210 C 72 220, 84 206, 74 198"
+       id="path7" />
+    <path
+       d="M94 158 C 86 186, 92 212, 80 236"
+       id="path8" />
+    <path
+       d="M112 162 C 110 192, 120 214, 110 240"
+       id="path9" />
+    <path
+       d="M132 162 C 136 190, 128 212, 140 236"
+       id="path10" />
+    <path
+       d="M150 158 C 160 180, 156 200, 168 214"
+       id="path11" />
+  </g>
+  <!-- fins -->
+  <path
+     d="M110 34 L 60 50 Q 72 82 92 80 Z"
+     fill="#C8302A"
+     id="path12" />
+  <path
+     d="M140 34 L 190 50 Q 178 82 158 80 Z"
+     fill="#C8302A"
+     id="path13" />
+  <!-- mantle -->
+  <path
+     d="M125 14 C 150 14, 182 66, 184 116 C 186 148, 164 166, 125 166 C 86 166, 64 148, 66 116 C 68 66, 100 14, 125 14 Z"
+     fill="url(#body)"
+     id="path14" />
+  <ellipse
+     cx="100"
+     cy="72"
+     rx="9"
+     ry="22"
+     fill="#FFFFFF"
+     opacity=".35"
+     transform="rotate(22 100 72)"
+     id="ellipse14" />
+  <circle
+     cx="148"
+     cy="60"
+     r="5"
+     fill="#A8231E"
+     opacity=".5"
+     id="circle14" />
+  <circle
+     cx="160"
+     cy="84"
+     r="3.5"
+     fill="#A8231E"
+     opacity=".5"
+     id="circle15" />
+  <!-- face -->
+  <circle
+     cx="104"
+     cy="122"
+     r="17"
+     fill="#fff"
+     id="circle16" />
+  <circle
+     cx="146"
+     cy="122"
+     r="17"
+     fill="#fff"
+     id="circle17" />
+  <circle
+     cx="108"
+     cy="125"
+     r="10"
+     fill="#1F2547"
+     id="circle18" />
+  <circle
+     cx="150"
+     cy="125"
+     r="10"
+     fill="#1F2547"
+     id="circle19" />
+  <circle
+     cx="111"
+     cy="121"
+     r="3.5"
+     fill="#fff"
+     id="circle20" />
+  <circle
+     cx="153"
+     cy="121"
+     r="3.5"
+     fill="#fff"
+     id="circle21" />
+  <ellipse
+     cx="88"
+     cy="146"
+     rx="8"
+     ry="5"
+     fill="#FF9AA2"
+     opacity=".8"
+     id="ellipse21" />
+  <ellipse
+     cx="162"
+     cy="146"
+     rx="8"
+     ry="5"
+     fill="#FF9AA2"
+     opacity=".8"
+     id="ellipse22" />
+  <path
+     d="M118 145 Q 127 155 136 145"
+     fill="none"
+     stroke="#1F2547"
+     stroke-width="4"
+     stroke-linecap="round"
+     id="path22" />
+</svg>

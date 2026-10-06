@@ -3,15 +3,15 @@
 [license]: https://github.com/david-uhlig/sqinky/blob/main/LICENSE.md
 [tests]: https://github.com/david-uhlig/sqinky/actions/workflows/main.yml
 
-# 🫟 Sqinky
+![Sqinky – Sqids for your Active Record models](.github/assets/banner-dark.svg)
 
-## 🦑 [Sqids] for your Active Record models.
+# Sqinky - 🦑 [Sqids] for your Active Record models.
 
 [![Gem Version](http://img.shields.io/gem/v/sqinky.svg)][gem]
 [![License: MIT](https://img.shields.io/github/license/david-uhlig/sqinky?label=License&labelColor=343B42&color=blue)][license]
 [![Tests](https://github.com/david-uhlig/sqinky/actions/workflows/main.yml/badge.svg)][tests]
 
-> **What is Sqids?**
+> **What is [Sqids]?**
 > 
 > Sqids (pronounced "squids") is an open-source library that lets you generate short unique identifiers from numbers. These IDs are URL-safe, can encode several numbers, and do not contain common profanity words.
 > 
