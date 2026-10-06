@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - The non-bang encoding method (e.g. `id_encoding`) raises `ArgumentError` for non-Integer attribute values instead of returning a misleading encoding. Previously `1.5` encoded to the same identifier as `1`, and `"abc"` to the identifier of `0`. Blank values still return `nil`.
 - Reject invalid encodings before querying the database. `nil`, empty, non-String, foreign-character, and wrong-arity encodings no longer decode into `nil` conditions that could find, destroy, or delete unrelated records: `find_by_*` returns `nil`, `find_by_*!` raises `ActiveRecord::RecordNotFound`, `destroy_by_*` returns `[]`, `delete_by_*` returns `0`, and the `decodes_as` helper returns `nil`.
+- Require the Active Support core extensions the library uses (`compact_blank!`, `presence`, `blank?`), so it no longer depends on Rails having loaded them.
 
 ## [0.1.0] - 2026-03-06
 
