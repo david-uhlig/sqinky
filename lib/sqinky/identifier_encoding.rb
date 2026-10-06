@@ -196,10 +196,12 @@ module Sqinky
         end
         coder = Sqids.new(**sqids_options)
         encoding_method_name = as.presence || attributes.join("_and_").concat("_encoding")
-        database_methods = %w[find_by find_by! destroy_by delete_by].map do |base_method|
-          # ["find_by!", "find_by_id_encoding!"]
-          [base_method, base_method.gsub(/(\w+?)(!?)\b/, "\\1_#{encoding_method_name}\\2")]
-        end
+        database_methods = {
+          "find_by" => "find_by_#{encoding_method_name}",
+          "find_by!" => "find_by_#{encoding_method_name}!",
+          "destroy_by" => "destroy_by_#{encoding_method_name}",
+          "delete_by" => "delete_by_#{encoding_method_name}"
+        }
 
         # Returns the attribute-value hash for a valid encoding, or nil. An encoding is valid if it is a non-empty
         # String that decodes to exactly one value per attribute and, unless +canonical+ is false, is the canonical
