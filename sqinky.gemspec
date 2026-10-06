@@ -35,7 +35,7 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency "activerecord", ">= 7.0.0"
   spec.add_dependency "activesupport", ">= 7.0.0"
-  spec.add_dependency "sqids", ">= 0.2.0"
+  spec.add_dependency "sqids", "~> 0.2"
   spec.add_development_dependency "appraisal"
   spec.add_development_dependency "irb"
   spec.add_development_dependency "pg"

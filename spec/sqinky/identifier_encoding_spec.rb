@@ -150,12 +150,33 @@ RSpec.describe Sqinky::IdentifierEncoding do
         instance.id = Sqids.max_value + 1
         expect { instance.id_encoding }.to raise_error(ArgumentError)
       end
+
+      it "returns nil when the identifier is blank" do
+        instance.id = ""
+        expect(instance.id_encoding).to be_nil
+      end
+
+      it "raises an ArgumentError when the identifier is noninteger" do
+        instance.id = 1.5
+        expect { instance.id_encoding }.to raise_error(ArgumentError, /1\.5/)
+        instance.id = "abc"
+        expect { instance.id_encoding }.to raise_error(ArgumentError)
+        instance.id = :abc
+        expect { instance.id_encoding }.to raise_error(ArgumentError)
+      end
     end
 
     context "multiple attributes" do
       before do
         subject.attr_accessor(:id, :other_id, :last_id)
         subject.encodes_identifiers(:id, :other_id, :last_id, as: :id_encoding)
+      end
+
+      it "raises an ArgumentError when one identifier is noninteger" do
+        instance.id = 1
+        instance.other_id = 2.5
+        instance.last_id = 3
+        expect { instance.id_encoding }.to raise_error(ArgumentError)
       end
 
       it "returns nil when one identifier value is nil" do

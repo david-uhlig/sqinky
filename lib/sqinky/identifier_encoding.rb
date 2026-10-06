@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 require "active_support/concern"
+require "active_support/core_ext/enumerable"
+require "active_support/core_ext/object/blank"
 require "sqids"
 
 module Sqinky
@@ -28,8 +30,8 @@ module Sqinky
       # * The referenced +attribute+ must be present when the generated +#{as}+ method is called.
       #
       # #### Generates
-      # * +#<as>+ - Generates the Sqids encoding from the attribute value.
-      # * +#<as>!+ - Generates the Sqids encoding from the attribute value. Raises +ArgumentError+ the attribute value is noninteger.
+      # * +#<as>+ - Generates the Sqids encoding from the attribute value. Returns nil if the value is blank, raises +ArgumentError+ if it is noninteger.
+      # * +#<as>!+ - Generates the Sqids encoding from the attribute value. Raises +ArgumentError+ if the attribute value is noninteger, including nil.
       # * +#<decodes_as>(encoding)+ - Decodes a Sqids encoding back to the attribute-value hash. (Optional)
       # * +.find_by_<as>(encoding)+ - Finds record by +encoding+ or returns nil.
       # * +.find_by_<as>!(encoding)+ - Finds record by +encoding+ or raises +ActiveRecord::RecordNotFound+ error.
@@ -56,8 +58,8 @@ module Sqinky
       # * The referenced +attribute+ must be present when the generated +#{as}+ method is called.
       #
       # #### Generates
-      # * +#<as>+ - Generates the Sqids encoding from the attribute values.
-      # * +#<as>!+ - Generates the Sqids encoding from the attribute values. Raises +ArgumentError+ if any attribute value is noninteger.
+      # * +#<as>+ - Generates the Sqids encoding from the attribute values. Returns nil if any value is blank, raises +ArgumentError+ if any value is noninteger.
+      # * +#<as>!+ - Generates the Sqids encoding from the attribute values. Raises +ArgumentError+ if any attribute value is noninteger, including nil.
       # * +#<decodes_as>(encoding)+ - Decodes a Sqids encoding back to the attributes-values hash. (Optional)
       # * +.find_by_<as>(encoding)+ - Finds record by +encoding+ or returns nil.
       # * +.find_by_<as>!(encoding)+ - Finds record by +encoding+ or raises +ActiveRecord::RecordNotFound+ error.
@@ -196,13 +198,15 @@ module Sqinky
         end
         coder = Sqids.new(**sqids_options)
         encoding_method_name = as.presence || attributes.join("_and_").concat("_encoding")
-        database_methods = %w[find_by find_by! destroy_by delete_by].map do |base_method|
-          # ["find_by!", "find_by_id_encoding!"]
-          [base_method, base_method.gsub(/(\w+?)(!?)\b/, "\\1_#{encoding_method_name}\\2")]
-        end
+        database_methods = {
+          "find_by" => "find_by_#{encoding_method_name}",
+          "find_by!" => "find_by_#{encoding_method_name}!",
+          "destroy_by" => "destroy_by_#{encoding_method_name}",
+          "delete_by" => "delete_by_#{encoding_method_name}"
+        }
         sqinky_ensure_method_names_available!(
           instance_methods: [encoding_method_name, "#{encoding_method_name}!"],
-          class_methods: database_methods.map(&:last) + [decodes_as.presence].compact
+          class_methods: database_methods.values + [decodes_as.presence].compact
         )
 
         # Returns the attribute-value hash for a valid encoding, or nil. An encoding is valid if it is a non-empty
@@ -222,28 +226,9 @@ module Sqinky
           end
         end
 
-        # @!method <encoding_method_name>
-        #   Returns the Sqids-encoded identifier for the configured attributes.
-        #
-        #   Will return an irreversible encoding if any attribute is noninteger. Use the bang method to ensure a
-        #   reversible encoding.
-        #
-        #   @raises [ArgumentError] If any of the attributes is a number below 0 or above +Sqids.max_value+.
-        #   @return [String, nil] Encoded identifier or nil if any of the attributes is +blank?+.
-        define_method(encoding_method_name) do
-          values = attributes.map { send(_1) }
-          values.any?(&:blank?) ? nil : coder.encode(values)
-        end
-
-        # @!method <encoding_method_name>
-        #   Returns the Sqids-encoded identifier for the configured attributes.
-        #
-        #   Ensures a reversible encoding.
-        #
-        #   @raises [ArgumentError] If any of the attributes is not a positive integer between 0 and +Sqids.max_value+
-        #   @return [String] Encoded identifier.
-        define_method("#{encoding_method_name}!") do
-          values = attributes.map { send(_1) }
+        # Returns the Sqids encoding of the given values. Raises +ArgumentError+ unless every value is an +Integer+, so
+        # that, e.g., 1.5 cannot be encoded as the same identifier as 1.
+        encode = lambda do |values|
           unless values.all? { _1.is_a?(Integer) }
             raise ArgumentError, <<~MSG
               Encoding supports integers between 0 and #{Sqids.max_value}.
@@ -252,6 +237,30 @@ module Sqinky
             MSG
           end
           coder.encode(values)
+        end
+
+        # @!method <encoding_method_name>
+        #   Returns the Sqids-encoded identifier for the configured attributes.
+        #
+        #   @raise [ArgumentError] If any of the attributes is present but not an integer between 0 and +Sqids.max_value+.
+        #   @return [String, nil] Encoded identifier or nil if any of the attributes is +blank?+.
+        define_method(encoding_method_name) do
+          values = attributes.map { send(_1) }
+
+          if values.any?(&:blank?)
+            nil
+          else
+            encode.call(values)
+          end
+        end
+
+        # @!method <encoding_method_name>!
+        #   Returns the Sqids-encoded identifier for the configured attributes.
+        #
+        #   @raise [ArgumentError] If any of the attributes is not an integer between 0 and +Sqids.max_value+, including nil.
+        #   @return [String] Encoded identifier.
+        define_method("#{encoding_method_name}!") do
+          encode.call(attributes.map { send(_1) })
         end
 
         database_methods.each do |base_method, dynamic_method|
