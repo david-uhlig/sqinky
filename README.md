@@ -37,6 +37,12 @@ Run the following command to add Sqinky to your Gemfile:
 bundle add sqinky
 ```
 
+### Supported versions
+
+Sqinky officially supports only the Ruby and Rails versions that still receive maintenance from their maintainers, see the [Ruby](https://www.ruby-lang.org/en/downloads/branches/) and [Rails](https://rubyonrails.org/maintenance) maintenance policies. The [test workflow](.github/workflows/main.yml) lists the versions currently tested.
+
+The gemspec allows older versions (`ruby >= 3.3`, `activerecord >= 7.0`) so that you are not blocked from installing Sqinky. They may work, but they aren't tested, and bugs that only occur on end-of-life versions may not get fixed.
+
 ## Usage
 
 To use it include `Sqinky::IdentifierEncoding` in your Active Record model and 
