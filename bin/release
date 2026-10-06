@@ -97,11 +97,11 @@ end
 # 7. Create tag `v<Version>`
 tag_name = "v#{version}"
 puts "Creating tag #{tag_name}..."
-system("git tag -a #{tag_name} -m \"Release #{tag_name}\" --sign") || abort_with("Failed to create tag #{tag_name}")
+system("git", "tag", "-a", tag_name, "-m", "Release #{tag_name}", "--sign") || abort_with("Failed to create tag #{tag_name}")
 
 # 8. Push outstanding commits and the tag to github
 puts "Pushing commits and tags to origin..."
-system("git push origin main") || abort_with("Failed to push commits")
-system("git push origin #{tag_name}") || abort_with("Failed to push tag")
+system("git", "push", "origin", "main") || abort_with("Failed to push commits")
+system("git", "push", "origin", tag_name) || abort_with("Failed to push tag")
 
 puts "Release #{version} successful!"

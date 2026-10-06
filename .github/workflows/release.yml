@@ -3,12 +3,15 @@ on:
   push:
     tags:
       - 'v*'
-permissions:
-  contents: read
-  id-token: write
+permissions: {}
 jobs:
   release:
     runs-on: ubuntu-latest
+    # Required reviewers for this environment are configured in the repository settings.
+    environment: release
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
