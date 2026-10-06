@@ -208,14 +208,17 @@ module Sqinky
         )
 
         # Returns the attribute-value hash for a valid encoding, or nil. An encoding is valid if it is a non-empty
-        # String that decodes to exactly one value per attribute and, unless +canonical+ is false, is the canonical
-        # encoding of those values. This rejects foreign characters, encodings of a different arity, and non-canonical
-        # aliases of the same values.
+        # String that decodes to exactly one value per attribute, no value exceeds +Sqids.max_value+ and, unless
+        # +canonical+ is false, is the canonical encoding of those values. This rejects foreign characters, encodings
+        # of a different arity, oversized values, and non-canonical aliases of the same values.
         decode = lambda do |encoding|
           values = encoding.is_a?(String) ? coder.decode(encoding) : []
 
           # Covers nil, non-String, empty, and foreign-character input, which all decode to no values.
           if values.size != attributes.size
+            nil
+          # Sqids decodes long input into values it can't encode, so re-encoding them would raise.
+          elsif values.any? { _1 > Sqids.max_value }
             nil
           elsif canonical && coder.encode(values) != encoding
             nil

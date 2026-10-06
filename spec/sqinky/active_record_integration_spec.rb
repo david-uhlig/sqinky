@@ -69,7 +69,8 @@ RSpec.describe "Sqinky::IdentifierEncoding with Active Record" do
     "foreign characters" => "!!!",
     "a non-string" => 123,
     "an encoding with too few values" => Sqids.new.encode([5]),
-    "an encoding with too many values" => Sqids.new.encode([5, 9, 1])
+    "an encoding with too many values" => Sqids.new.encode([5, 9, 1]),
+    "an encoding with a value above Sqids.max_value" => Sqids.new.encode([5, 9]) + "a" * 25
   }
 
   invalid_encodings.each do |description, encoding|
@@ -169,6 +170,13 @@ RSpec.describe "Sqinky::IdentifierEncoding with Active Record" do
       expect(lenient_model.delete_by_token("")).to eq(0)
       expect(lenient_model.delete_by_token("!!!")).to eq(0)
       expect(lenient_model.count).to eq(3)
+    end
+
+    it "still rejects encodings with a value above Sqids.max_value" do
+      oversized = "U" + "Z" * 30
+
+      expect(lenient_model.decode_id_encoding(oversized)).to be_nil
+      expect { lenient_model.find_by_id_encoding!(oversized) }.to raise_error(ActiveRecord::RecordNotFound, /invalid encoding/)
     end
 
     it "is not forwarded to Sqids" do

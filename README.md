@@ -260,7 +260,7 @@ Sqinky generates these methods when invoking `encodes_identifier(s)`:
 | `Class.delete_by_<as>(encoding)`  | Decodes `encoding` and passes the decoded hash to `delete_by(...)`.                                |
 
 > [!NOTE]
-> Invalid encodings never reach the database. An encoding is valid if it is a non-empty `String` that decodes to exactly one value per configured attribute and, unless `canonical: false` is set, is the canonical Sqids encoding of those values. For an invalid encoding `find_by_<as>` returns `nil`, `find_by_<as>!` raises `ActiveRecord::RecordNotFound`, `destroy_by_<as>` returns `[]`, and `delete_by_<as>` returns `0`.
+> Invalid encodings never reach the database. An encoding is valid if it is a non-empty `String` that decodes to exactly one value per configured attribute, none of them above `Sqids.max_value`, and, unless `canonical: false` is set, is the canonical Sqids encoding of those values. For an invalid encoding `find_by_<as>` returns `nil`, `find_by_<as>!` raises `ActiveRecord::RecordNotFound`, `destroy_by_<as>` returns `[]`, and `delete_by_<as>` returns `0`.
 
 
 ## Development
