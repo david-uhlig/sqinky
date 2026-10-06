@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Only canonical encodings are accepted by default, so each record has exactly one valid encoding. Non-canonical aliases, including encodings issued before a Sqids option was changed, are rejected unless `canonical: false` is set.
 - `encodes_identifier` and `encodes_identifiers` raise `ArgumentError` if a generated method would replace an existing method, e.g. `as: :id` or `as: :to_param`, or another encoding's method in the same class. Redeclaring an encoding inherited from a parent class is still allowed.
 - The encoding methods read attributes with `public_send` instead of `send`, so encoding a private method raises `NoMethodError`.
+- Encoding is about 4x faster, which also speeds up decoding and the `find_by_*` methods, since they check that an encoding is canonical by re-encoding it. Sqinky now checks an encoding against the blocklist with set lookups instead of letting Sqids scan every blocked word. The encodings stay the same.
 
 ### Fixed
 
