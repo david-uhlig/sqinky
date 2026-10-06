@@ -1,110 +1,119 @@
 # frozen_string_literal: true
 
+# Compares finding records by a Sqinky encoding, which is decoded on the fly, against finding them by primary key
+# and by an encoding stored in a column. Runs against SQLite and, if it is reachable, PostgreSQL.
+#
+#   bundle exec ruby benchmarks/db_retrieval.rb
+#   NUM_RECORDS=10000 WARMUP=1 TIME=2 bundle exec ruby benchmarks/db_retrieval.rb  # quicker, noisier run
+#   DATABASE_URL=postgres://user:password@host/database bundle exec ruby benchmarks/db_retrieval.rb
+#
+# The benchmark creates and drops the table sqinky_benchmark_orders. It doesn't touch any other table.
+
 require "active_record"
-require "sqlite3"
 require "benchmark/ips"
 require "sqids"
 require_relative "../lib/sqinky"
 
-NUM_RECORDS = 100
+NUM_RECORDS = Integer(ENV.fetch("NUM_RECORDS", 100_000))
+NUM_ACCOUNTS = 100
+SAMPLE_SIZE = 10_000
+IPS_CONFIG = {warmup: Float(ENV.fetch("WARMUP", 2)), time: Float(ENV.fetch("TIME", 5))}.freeze
+POSTGRES_URL = ENV.fetch("DATABASE_URL", "postgres://postgres:postgres@127.0.0.1/postgres")
+SQLITE_FILE = File.expand_path("db_retrieval.sqlite3", __dir__)
 
 class Order < ActiveRecord::Base
   include Sqinky::IdentifierEncoding
 
-  encodes_identifier :id, as: :sqids_encoding
+  self.table_name = "sqinky_benchmark_orders"
+
+  encodes_identifier :id, as: :public_id
+  encodes_identifiers :id, :account_id, as: :token
 end
 
-puts "Preparing #{NUM_RECORDS} records ----------------"
 sqids = Sqids.new
-@orders = Array.new(NUM_RECORDS) do |index|
-  encoding = sqids.encode([index + 1])
-  {sqid: encoding, sqid_unindexed: encoding}
+ROWS = Array.new(NUM_RECORDS) do |index|
+  id = index + 1
+  encoding = sqids.encode([id])
+  {id: id, account_id: id % NUM_ACCOUNTS, sqid: encoding, sqid_unindexed: encoding}
 end
 
-# Prepare random IDs and SQIDs for retrieval
-sample_size = NUM_RECORDS
-@random_ids = Array.new(sample_size) { rand(1..NUM_RECORDS) }
-@random_sqids = @random_ids.map { |id| sqids.encode([id]) }
+# Lookups sample from these, so that every report pays the same sampling overhead.
+SAMPLE = ROWS.sample(SAMPLE_SIZE).map { |row| row.merge(token: sqids.encode([row[:id], row[:account_id]])) }
+MISSING_ID = NUM_RECORDS + 1
+MISSING_ENCODING = sqids.encode([MISSING_ID])
+INVALID_ENCODING = "not-an-encoding"
 
-def run_benchmark(adapter:, connection_config:)
-  puts "Preparing #{adapter} database -----------------------"
+def run_benchmark(adapter, connection_config)
+  puts "\n#### #{adapter}"
+  ActiveRecord::Base.establish_connection(connection_config)
+  connection = ActiveRecord::Base.lease_connection
+  version_query = (connection.adapter_name == "SQLite") ? "SELECT sqlite_version()" : "SHOW server_version"
+  puts "Database: #{connection.adapter_name} #{connection.select_value(version_query)}"
 
-  begin
-    ActiveRecord::Base.establish_connection(connection_config)
-    ActiveRecord::Base.connection.active?
-  rescue => e
-    puts "Could not connect to #{adapter}: #{e.message}"
-    return
+  connection.create_table(Order.table_name, force: true) do |t|
+    t.integer :account_id, null: false
+    t.string :sqid, null: false, index: {unique: true}
+    t.string :sqid_unindexed, null: false
+  end
+  Order.reset_column_information
+
+  print "Inserting #{NUM_RECORDS} records... "
+  ROWS.each_slice(10_000) { Order.insert_all(_1) }
+  # Fresh statistics, so that the query planner uses the indexes.
+  connection.execute("ANALYZE #{Order.table_name}")
+  puts "done."
+
+  puts "\n== Finding by a single-column encoding"
+  Benchmark.ips do |x|
+    x.config(**IPS_CONFIG)
+    x.report("find(id)") { Order.find(SAMPLE.sample[:id]) }
+    x.report("find_by(id:)") { Order.find_by(id: SAMPLE.sample[:id]) }
+    x.report("find_by_public_id") { Order.find_by_public_id(SAMPLE.sample[:sqid]) }
+    x.report("find_by_public_id!") { Order.find_by_public_id!(SAMPLE.sample[:sqid]) }
+    x.report("find_by(sqid:) (stored, indexed)") { Order.find_by(sqid: SAMPLE.sample[:sqid]) }
+    x.compare!
   end
 
-  ActiveRecord::Schema.define do
-    create_table :orders, force: true do |t|
-      t.string :sqid_unindexed
-      t.string :sqid
-    end
-    add_index :orders, :sqid
+  # Kept apart, because a full table scan is orders of magnitude slower than the other lookups and would take over
+  # the comparison.
+  puts "\n== Finding by a stored encoding without an index (full table scan)"
+  Benchmark.ips do |x|
+    x.config(**IPS_CONFIG)
+    x.report("find_by(sqid_unindexed:)") { Order.find_by(sqid_unindexed: SAMPLE.sample[:sqid]) }
   end
 
-  puts "Inserting into the database..."
-  # Bulk insert for speed
-  Order.insert_all(@orders)
-  puts "Orders inserted."
-
-  puts "Benchmarking #{adapter} ------------------------------------"
-
-  Benchmark.ips do |benchmark|
-    benchmark.report("#1: Find by ID (Direct)") do
-      Order.find(@random_ids.sample)
+  puts "\n== Finding by a two-column encoding"
+  Benchmark.ips do |x|
+    x.config(**IPS_CONFIG)
+    x.report("find_by(id:, account_id:)") do
+      row = SAMPLE.sample
+      Order.find_by(id: row[:id], account_id: row[:account_id])
     end
-
-    benchmark.report("#2: Find by encoding (Indexed column)") do
-      Order.find_by(sqid: @random_sqids.sample)
-    end
-
-    benchmark.report("#3: Find by encoding (Column without index)") do
-      Order.find_by(sqid_unindexed: @random_sqids.sample)
-    end
-
-    benchmark.report("#4: Find by encoding (On-the-fly)") do
-      Order.find_by_sqids_encoding(@random_sqids.sample)
-    end
-
-    benchmark.report("#5: Find by encoding (Strict, On-the-fly)") do
-      Order.find_by_sqids_encoding!(@random_sqids.sample)
-    end
-
-    benchmark.compare!
+    x.report("find_by_token") { Order.find_by_token(SAMPLE.sample[:token]) }
+    x.compare!
   end
+
+  # An invalid encoding never reaches the database. A valid encoding of a missing record does.
+  puts "\n== Not finding a record"
+  Benchmark.ips do |x|
+    x.config(**IPS_CONFIG)
+    x.report("find_by(id:) (missing)") { Order.find_by(id: MISSING_ID) }
+    x.report("find_by_public_id (missing)") { Order.find_by_public_id(MISSING_ENCODING) }
+    x.report("find_by_public_id (invalid)") { Order.find_by_public_id(INVALID_ENCODING) }
+    x.compare!
+  end
+rescue ActiveRecord::ConnectionNotEstablished, ActiveRecord::NoDatabaseError, LoadError => e
+  puts "Skipping #{adapter}: #{e.message.lines.first&.strip}"
 ensure
-  if adapter == "sqlite3" && File.exist?(connection_config[:database])
-    File.delete(connection_config[:database])
+  if ActiveRecord::Base.connected?
+    ActiveRecord::Base.lease_connection.drop_table(Order.table_name, if_exists: true)
+    ActiveRecord::Base.remove_connection
   end
+  Dir.glob("#{SQLITE_FILE}*").each { File.delete(_1) }
 end
 
-# Run PostgreSQL if available
-begin
-  require "pg"
-  run_benchmark(
-    adapter: "postgresql",
-    connection_config: {
-      adapter: "postgresql",
-      host: "127.0.0.1",
-      user: "postgres",
-      password: "postgres",
-      database: "postgres",
-      pool: 5,
-      connect_timeout: 2
-    }
-  )
-rescue LoadError
-  puts "\nPostgreSQL skip: 'pg' gem not installed."
-rescue => e
-  puts "\nPostgreSQL skip: #{e.message}"
-end
+puts "Ruby #{RUBY_VERSION} (YJIT #{(defined?(RubyVM::YJIT) && RubyVM::YJIT.enabled?) ? "on" : "off"}), " \
+  "Active Record #{ActiveRecord.version}, Sqids #{Gem.loaded_specs["sqids"]&.version}, #{NUM_RECORDS} records"
 
-# Run SQLite3
-DB_FILE = "benchmarks/db_retrieval.sqlite3"
-run_benchmark(
-  adapter: "sqlite3",
-  connection_config: {adapter: "sqlite3", database: DB_FILE}
-)
+run_benchmark("SQLite", adapter: "sqlite3", database: SQLITE_FILE)
+run_benchmark("PostgreSQL", url: POSTGRES_URL, connect_timeout: 2)
