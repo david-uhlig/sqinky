@@ -169,6 +169,33 @@ label.id = 1
 label.id_encoding # => "Uk"
 ```
 
+### Method Name Collisions
+
+Sqinky raises an `ArgumentError` instead of replacing a method that already exists. This includes attributes like `id`, methods inherited from Active Record like `to_param`, your own methods, and the methods of another encoding in the same class. Redeclaring an encoding inherited from a parent class is allowed.
+
+```ruby
+class Comment < ApplicationRecord
+  include Sqinky::IdentifierEncoding
+
+  encodes_identifier as: :id # => ArgumentError: Comment already defines #id. Choose a different name with `as:` or `decodes_as:`.
+end
+```
+
+To use an encoding in URLs, give it its own name and delegate to it:
+
+```ruby
+class Comment < ApplicationRecord
+  include Sqinky::IdentifierEncoding
+
+  encodes_identifier as: :token
+
+  def to_param = token
+end
+```
+
+> [!WARNING]
+> Database columns can't be detected, because Active Record defines their reader methods lazily. Don't name an encoding after one of the model's columns: the encoding would hide the column's reader.
+
 ### Changing Sqids options
 
 By default only canonical encodings are accepted, so every record has exactly one valid encoding. As a consequence, changing a Sqids option invalidates previously issued encodings. This includes raising `min_length`: `"Uk"` still decodes to `[1]`, but the canonical encoding becomes `"UkLWZg9DAJ"`, so `"Uk"` is rejected.
