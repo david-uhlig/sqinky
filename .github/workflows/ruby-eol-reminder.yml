@@ -1,0 +1,65 @@
+name: Ruby EOL Reminder
+
+# Ruby branches reach end of life on March 31. This workflow fails on purpose
+# every April 1 so the failure notification serves as a reminder to drop the
+# EOL Ruby version.
+on:
+  schedule:
+    - cron: '0 18 1 4 *'
+      timezone: 'Europe/Berlin'
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  remind:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Remind about EOL Ruby versions
+        run: |
+          today=$(date -u +%F)
+          matrix=$(grep -oP "ruby: \[\K[^\]]+" .github/workflows/main.yml | tr -d "' " | tr ',' ' ')
+          required=$(grep -oP 'required_ruby_version = "\K[^"]+' sqinky.gemspec)
+
+          eol_list=""
+          if eol_json=$(curl -fsSL --retry 3 https://endoflife.date/api/ruby.json); then
+            eol_list=$(jq -r --arg today "$today" \
+              '.[] | select((.eol | type) == "string" and .eol <= $today) | .cycle' <<< "$eol_json")
+          fi
+
+          eol_in_matrix=""
+          for version in $matrix; do
+            if grep -qx "$version" <<< "$eol_list"; then
+              eol_in_matrix="$eol_in_matrix $version"
+            fi
+          done
+
+          {
+            echo "## Ruby EOL reminder"
+            echo
+            echo "A Ruby version reached end of life on March 31."
+            echo
+            echo "- Tested Ruby versions: \`$matrix\`"
+            echo "- \`required_ruby_version\`: \`$required\`"
+            if [ -n "$eol_in_matrix" ]; then
+              echo "- **EOL versions still in the test matrix:\`$eol_in_matrix\`**"
+            elif [ -z "$eol_list" ]; then
+              echo "- Could not fetch EOL dates from https://endoflife.date/ruby, check manually."
+            fi
+            echo
+            echo "To drop it, update:"
+            echo
+            echo "- the Ruby matrix in \`.github/workflows/main.yml\`"
+            echo "- \`required_ruby_version\` in \`sqinky.gemspec\`"
+            echo "- \`ruby_version\` in \`.standard.yml\`"
+            echo "- \`ruby\` in \`mise.toml\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          echo "::error title=Ruby EOL::A Ruby version reached end of life on March 31. EOL versions in the test matrix:${eol_in_matrix:- none found}. See the job summary for what to update."
+          exit 1
