@@ -5,11 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-### Unreleased
+## [Unreleased]
 
-### 0.1.0
+### Added
+
+- `canonical:` option for `encodes_identifier` and `encodes_identifiers`. Pass `canonical: false` to also accept non-canonical encodings, e.g. those issued before `min_length` was raised or `blocklist` was changed.
+
+### Changed
+
+- Only canonical encodings are accepted by default, so each record has exactly one valid encoding. Non-canonical aliases, including encodings issued before a Sqids option was changed, are rejected unless `canonical: false` is set.
+
+### Fixed
+
+- Reject invalid encodings before querying the database. `nil`, empty, non-String, foreign-character, and wrong-arity encodings no longer decode into `nil` conditions that could find, destroy, or delete unrelated records: `find_by_*` returns `nil`, `find_by_*!` raises `ActiveRecord::RecordNotFound`, `destroy_by_*` returns `[]`, `delete_by_*` returns `0`, and the `decodes_as` helper returns `nil`.
+
+## [0.1.0] - 2026-03-06
 
 - Initial release
 
 [unreleased]: https://github.com/david-uhlig/sqinky/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/david-uhlig/sqinky/compare/v0.1.0
+[0.1.0]: https://github.com/david-uhlig/sqinky/releases/tag/v0.1.0

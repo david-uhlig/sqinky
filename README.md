@@ -169,6 +169,24 @@ label.id = 1
 label.id_encoding # => "Uk"
 ```
 
+### Changing Sqids options
+
+By default only canonical encodings are accepted, so every record has exactly one valid encoding. As a consequence, changing a Sqids option invalidates previously issued encodings. This includes raising `min_length`: `"Uk"` still decodes to `[1]`, but the canonical encoding becomes `"UkLWZg9DAJ"`, so `"Uk"` is rejected.
+
+If old encodings must keep working after raising `min_length` or changing `blocklist`, pass `canonical: false`. Encodings with the wrong number of values are still rejected, but several encodings may then resolve to the same record.
+
+```ruby
+class Comment < ApplicationRecord
+  include Sqinky::IdentifierEncoding
+
+  # Issues "UkLWZg9DAJ", but still accepts the previously issued "Uk".
+  encodes_identifier :id, min_length: 10, canonical: false
+end
+```
+
+> [!WARNING]
+> Never change `alphabet` once encodings are issued: old encodings then decode to different values and resolve to the wrong records, regardless of `canonical`.
+
 ### Parameter Overview
 
 #### `encodes_identifier`
@@ -178,6 +196,7 @@ label.id_encoding # => "Uk"
 | `attribute`       | `:id`   | The attribute to encode. Should only have `Integer` `>= 0` values.                          |
 | `as:`             | `nil`   | If `nil` inferred as `<attribute>_encoding`.                                                |
 | `decodes_as:`     | `nil`   | Name of the decoding class method. If `nil` no such method is generated.                    |
+| `canonical:`      | `true`  | If `false`, also accept non-canonical encodings. See [Changing Sqids options](#changing-sqids-options). |
 | `**sqids_options` | `{}`    | Sqids options passed through to `Sqids.new`, e.g. `min_length`, `alphabet`, and `blocklist` |
 
 #### `encodes_identifiers`
@@ -187,6 +206,7 @@ label.id_encoding # => "Uk"
 | `*attributes`     |         | The attribute(s) to encode. Should only have `Integer` `>= 0` values.                        |
 | `as:`             | `nil`   | If `nil` inferred as `<attribute[_and_<attribute>]>_encoding`.                               |
 | `decodes_as:`     | `nil`   | Name of the decoding class method. If `nil` no such method is generated.                     |
+| `canonical:`      | `true`  | If `false`, also accept non-canonical encodings. See [Changing Sqids options](#changing-sqids-options).  |
 | `**sqids_options` | `{}`    | Sqids options passed through to `Sqids.new`, e.g. `min_length`, `alphabet`, and `blocklist`. |
 
 ### Generated Methods Overview
@@ -197,11 +217,15 @@ Sqinky generates these methods when invoking `encodes_identifier(s)`:
 |-----------------------------------|----------------------------------------------------------------------------------------------------|
 | `instance.<as>`                   | Returns the Sqids encoding for the configured attributes. Returns `nil` if any attribute is `nil`. |
 | `instance.<as>!`                  | Same as above, but raises `ArgumentError` if any attribute is not an `Integer`.                    |
-| `Class.<decodes_as>(encoding)`    | Returns the decoded hash, e.g. `{ id: 42 }`.                                                       |
+| `Class.<decodes_as>(encoding)`    | Returns the decoded hash, e.g. `{ id: 42 }`, or `nil` if the encoding is invalid.                  |
 | `Class.find_by_<as>(encoding)`    | Decodes `encoding` and passes the decoded hash to `find_by(...)`.                                  |
 | `Class.find_by_<as>!(encoding)`   | Decodes `encoding` and passes the decoded hash to `find_by!(...)`.                                 |
 | `Class.destroy_by_<as>(encoding)` | Decodes `encoding` and passes the decoded hash to `destroy_by(...)`.                               |
 | `Class.delete_by_<as>(encoding)`  | Decodes `encoding` and passes the decoded hash to `delete_by(...)`.                                |
+
+> [!NOTE]
+> Invalid encodings never reach the database. An encoding is valid if it is a non-empty `String` that decodes to exactly one value per configured attribute and, unless `canonical: false` is set, is the canonical Sqids encoding of those values. For an invalid encoding `find_by_<as>` returns `nil`, `find_by_<as>!` raises `ActiveRecord::RecordNotFound`, `destroy_by_<as>` returns `[]`, and `delete_by_<as>` returns `0`.
+
 
 ## Development
 

@@ -39,13 +39,14 @@ module Sqinky
       # @param attribute [Symbol] Attribute to encode. Must take positive +Integer+ values.
       # @param as [Symbol, nil] Optional name of the instance method that returns the encoding. Also part of the database methods, e.g. +find_by_<as>+. If missing, it is generated from the attribute name, e.g. +id_encoding+.
       # @param decodes_as [Symbol, nil] Optional class method name that, when given an encoding, returns a hash of decoded attribute values. If missing, no such method is generated.
+      # @param canonical [Boolean] If +true+ (default), only the canonical encoding of the decoded values is accepted. Set to +false+ to also accept non-canonical encodings, e.g. those issued before +min_length+ was raised or +blocklist+ was changed. Encodings with the wrong number of values are rejected either way.
       # @param sqids_options [Hash] Options forwarded to +Sqids.new+, e.g. +alphabet+, +min_length+, and +blocklist+.
       #
       # @return [Void]
       #
       # @see .encodes_identifiers
-      def encodes_identifier(attribute = :id, as: nil, decodes_as: nil, **sqids_options)
-        encodes_identifiers(attribute, as: as, decodes_as: decodes_as, **sqids_options)
+      def encodes_identifier(attribute = :id, as: nil, decodes_as: nil, canonical: true, **sqids_options)
+        encodes_identifiers(attribute, as: as, decodes_as: decodes_as, canonical: canonical, **sqids_options)
       end
 
       # Generates methods for creating and consuming a single or multiple identifier attribute encoding.
@@ -180,12 +181,13 @@ module Sqinky
       # @param attributes [Array<Symbol>] List of attributes to encode. At least one attribute must be provided.
       # @param as [Symbol, nil] Name of the instance method that returns the encoding. Also part of the database methods, e.g. +find_by_<as>+. If missing, it is generated from the attribute names, e.g. +id_encoding+ or +id_and_tenant_id_encoding+.
       # @param decodes_as [Symbol, nil] Optional class method name that, when given an encoding, returns a hash of decoded attribute values. If missing, no such method is generated.
+      # @param canonical [Boolean] If +true+ (default), only the canonical encoding of the decoded values is accepted. Set to +false+ to also accept non-canonical encodings, e.g. those issued before +min_length+ was raised or +blocklist+ was changed. Encodings with the wrong number of values are rejected either way.
       # @param sqids_options [Hash] Options forwarded to +Sqids.new+, e.g. +alphabet+, +min_length+, and +blocklist+.
       #
       # @raise [ArgumentError] if no attributes are given.
       #
       # @return [void]
-      def encodes_identifiers(*attributes, as: nil, decodes_as: nil, **sqids_options)
+      def encodes_identifiers(*attributes, as: nil, decodes_as: nil, canonical: true, **sqids_options)
         if attributes.compact_blank!.empty?
           raise ArgumentError, <<~MSG
             Must specify at least one attribute. Hint: Use `encodes_identifier` instead to encode the primary key 
@@ -197,6 +199,23 @@ module Sqinky
         database_methods = %w[find_by find_by! destroy_by delete_by].map do |base_method|
           # ["find_by!", "find_by_id_encoding!"]
           [base_method, base_method.gsub(/(\w+?)(!?)\b/, "\\1_#{encoding_method_name}\\2")]
+        end
+
+        # Returns the attribute-value hash for a valid encoding, or nil. An encoding is valid if it is a non-empty
+        # String that decodes to exactly one value per attribute and, unless +canonical+ is false, is the canonical
+        # encoding of those values. This rejects foreign characters, encodings of a different arity, and non-canonical
+        # aliases of the same values.
+        decode = lambda do |encoding|
+          values = encoding.is_a?(String) ? coder.decode(encoding) : []
+
+          # Covers nil, non-String, empty, and foreign-character input, which all decode to no values.
+          if values.size != attributes.size
+            nil
+          elsif canonical && coder.encode(values) != encoding
+            nil
+          else
+            attributes.zip(values).to_h
+          end
         end
 
         # @!method <encoding_method_name>
@@ -237,6 +256,9 @@ module Sqinky
           #   attributes, then delegating to the corresponding Active Record
           #   query method (e.g. `find_by`, `find_by!`, `destroy_by`, `delete_by`).
           #
+          #   An invalid encoding never reaches the database: +find_by+ returns nil, +find_by!+ raises
+          #   +ActiveRecord::RecordNotFound+, +destroy_by+ returns [], and +delete_by+ returns 0.
+          #
           #   @param encoding [String] Sqids-encoded identifier
           #   @return [Object, nil] model instance or result of the delegated
           #     query method
@@ -245,9 +267,18 @@ module Sqinky
           # `find_by_id_encoding`, `find_by_id_encoding!`,
           # `destroy_by_id_encoding`, `delete_by_id_encoding`.
           define_singleton_method(dynamic_method) do |encoding|
-            values = coder.decode(encoding)
-            args = attributes.zip(values).to_h
-            send(base_method, args)
+            args = decode.call(encoding)
+
+            if args
+              send(base_method, args)
+            else
+              case base_method
+              when "find_by" then nil
+              when "find_by!" then raise ActiveRecord::RecordNotFound.new("Couldn't find #{name} with an invalid encoding", name)
+              when "destroy_by" then []
+              when "delete_by" then 0
+              end
+            end
           end
         end
 
@@ -258,10 +289,9 @@ module Sqinky
           #   attribute to its decoded numeric value.
           #
           #   @param encoding [String] Sqids-encoded identifier
-          #   @return [Hash{Symbol=>Integer}] decoded attribute values
+          #   @return [Hash{Symbol=>Integer}, nil] decoded attribute values, or nil if the encoding is invalid
           define_singleton_method(decoding_method_name) do |encoding|
-            values = coder.decode(encoding)
-            attributes.zip(values).to_h
+            decode.call(encoding)
           end
         end
       end
