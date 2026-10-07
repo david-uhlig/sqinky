@@ -20,5 +20,11 @@ jobs:
         uses: ruby/setup-ruby@762794c140bbeda0f1224786aa33b4b46783a6c1
         with:
           bundler-cache: false
+      # Install without the shared cache, so the release can't use poisoned gems.
+      # Frozen, so Bundler can't rewrite Gemfile.lock and fail the clean-tree check of `rake release`.
+      - name: Install dependencies
+        run: bundle install
+        env:
+          BUNDLE_FROZEN: "true"
       - name: Release to RubyGems
         uses: rubygems/release-gem@7f9650160c1a4e7989fdc9855807bdbd421d8b6b
