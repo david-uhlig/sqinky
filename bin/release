@@ -74,18 +74,20 @@ unless File.exist?(changelog_file)
 end
 
 changelog_content = File.read(changelog_file)
-unless changelog_content.match?(/^### #{Regexp.escape(version)}/)
-  puts "Warning: CHANGELOG.md does not have a section with the version number `### #{version}`."
+unless changelog_content.match?(/^## \[#{Regexp.escape(version)}\]/)
+  puts "Warning: CHANGELOG.md does not have a section with the version number `## [#{version}]`."
+end
+unless changelog_content.match?(/^\[#{Regexp.escape(version)}\]: /)
+  puts "Warning: CHANGELOG.md does not have a link for the version number `[#{version}]: `."
 end
 
-# 5. Check if the `### Unreleased` section is empty
-unreleased_match = changelog_content.match(/^### Unreleased\s*(.*?)\s*^###/m) || 
-                   changelog_content.match(/^### Unreleased\s*(.*)/m)
+# 5. Check if the `## [Unreleased]` section is empty
+unreleased_match = changelog_content.match(/^## \[Unreleased\][^\n]*\n(.*?)(?=^## |^\[[^\]]+\]: |\z)/mi)
 
 if unreleased_match
   unreleased_content = unreleased_match[1].strip
   unless unreleased_content.empty?
-    puts "Warning: The `### Unreleased` section is not empty."
+    puts "Warning: The `## [Unreleased]` section is not empty."
   end
 end
 
