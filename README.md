@@ -283,6 +283,8 @@ This project uses [mise](https://mise.jdx.dev/) for managing Ruby versions and t
 - `bundle exec appraisal install`: Install the dependencies for all supported Rails versions.
 - `bundle exec appraisal rake spec`: Run tests against all supported Rails versions.
 - `mise run ci`: Run the local CI pipeline (linting and multi-Rails tests).
+- `bundle exec ruby benchmarks/id_encoding.rb`: Benchmark encoding and decoding against raw Sqids.
+- `bundle exec ruby benchmarks/db_retrieval.rb`: Benchmark finding records by encoding against SQLite and, if reachable via `DATABASE_URL`, PostgreSQL. Set `NUM_RECORDS`, `WARMUP`, and `TIME` for quicker runs.
 
 ## Versioning
 
