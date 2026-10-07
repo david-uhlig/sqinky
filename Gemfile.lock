@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    sqinky (0.1.0)
+    sqinky (0.2.0)
       activerecord (>= 7.0.0)
       activesupport (>= 7.0.0)
       sqids (~> 0.2)
