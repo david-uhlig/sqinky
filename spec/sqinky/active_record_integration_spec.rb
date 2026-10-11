@@ -180,7 +180,7 @@ RSpec.describe "Sqinky::IdentifierEncoding with Active Record" do
     end
 
     it "is not forwarded to Sqids" do
-      expect(Sqids).to receive(:new).with(min_length: 20).and_call_original
+      expect(Sqinky::Coder).to receive(:new).with(min_length: 20).and_call_original
       Class.new(ActiveRecord::Base) do
         include Sqinky::IdentifierEncoding
 

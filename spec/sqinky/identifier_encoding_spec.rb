@@ -109,8 +109,8 @@ RSpec.describe Sqinky::IdentifierEncoding do
     end
 
     describe "sqids parameters" do
-      it "passes sqids arguments to Sqids.new" do
-        expect(Sqids).to receive(:new).with(min_length: 10, alphabet: "abc", blocklist: []).and_call_original
+      it "passes sqids arguments to the coder" do
+        expect(Sqinky::Coder).to receive(:new).with(min_length: 10, alphabet: "abc", blocklist: []).and_call_original
         subject.encodes_identifiers(:id, min_length: 10, alphabet: "abc", blocklist: [])
       end
     end

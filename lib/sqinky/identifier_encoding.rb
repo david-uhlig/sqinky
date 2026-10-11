@@ -4,6 +4,7 @@ require "active_support/concern"
 require "active_support/core_ext/enumerable"
 require "active_support/core_ext/object/blank"
 require "sqids"
+require_relative "coder"
 
 module Sqinky
   # Add Sqids-based identifier encoding/decoding helpers to Active Record models.
@@ -197,7 +198,7 @@ module Sqinky
             without having to specify the `:id` attribute.
           MSG
         end
-        coder = Sqids.new(**sqids_options)
+        coder = Coder.new(**sqids_options)
         encoding_method_name = as.presence || attributes.join("_and_").concat("_encoding")
         database_methods = {
           "find_by" => "find_by_#{encoding_method_name}",
