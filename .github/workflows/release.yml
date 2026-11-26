@@ -17,7 +17,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Set up Ruby
-        uses: ruby/setup-ruby@651ff0d62c5c79bed6d53ec518387aae20e72c1a
+        uses: ruby/setup-ruby@de492cf36cbab201753d720ce4f4e336cd688c94
         with:
           bundler-cache: false
       # Install without the shared cache, so the release can't use poisoned gems.
