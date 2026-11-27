@@ -17,7 +17,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Set up Ruby
-        uses: ruby/setup-ruby@de492cf36cbab201753d720ce4f4e336cd688c94
+        uses: ruby/setup-ruby@be3c7df29b3349ec6bcfc6b4792f1cf9f5237d18
         with:
           bundler-cache: false
       # Install without the shared cache, so the release can't use poisoned gems.
@@ -27,4 +27,4 @@ jobs:
         env:
           BUNDLE_FROZEN: "true"
       - name: Release to RubyGems
-        uses: rubygems/release-gem@7f9650160c1a4e7989fdc9855807bdbd421d8b6b
+        uses: rubygems/release-gem@5c53f5308233b7c0f47411f0471b3faae6fa57b2
